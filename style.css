@@ -17,8 +17,8 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
-body {
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body { overflow-x: hidden;
   background: var(--paper);
   color: var(--ink);
   font-family: 'Jost', system-ui, sans-serif;
@@ -57,13 +57,19 @@ header {
   gap: 20px;
   padding: 0 5%;
   height: 64px;
+  min-width: 0;
 }
 .logo {
   display: flex;
   align-items: center;
   gap: 12px;
   text-decoration: none;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 0;
+}
+.logo-text {
+  min-width: 0;
+  overflow: hidden;
 }
 .logo-mark { width: 34px; height: 34px; }
 .logo-text strong {
@@ -73,6 +79,9 @@ header {
   color: var(--ink);
   display: block;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .logo-text small {
   font-size: .6rem;
