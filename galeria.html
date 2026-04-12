@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Galéria – Mezőcsáti Református Egyházközség</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<div class="topbar">
+  <span>Mezőcsát · Református Egyházközség</span>
+  <a href="index.html">← Főoldal</a>
+</div>
+
+<header>
+  <div class="header-inner">
+    <a href="index.html" class="logo">
+      <svg class="logo-mark" viewBox="0 0 44 44" fill="none">
+        <rect x="19" y="3" width="6" height="38" rx="2" fill="#9a7b4f"/>
+        <rect x="3" y="17" width="38" height="6" rx="2" fill="#9a7b4f"/>
+      </svg>
+      <div class="logo-text">
+        <strong>Mezőcsáti Református Egyházközség</strong>
+      </div>
+    </a>
+    <div class="header-sep"></div>
+    <button class="hamburger" id="hamburger" aria-label="Menü">
+      <span></span><span></span><span></span>
+    </button>
+    <nav id="main-nav">
+      <a href="index.html">Főoldal</a>
+      <a href="kozlemenyek.html">Közlemények</a>
+      <a href="index.html#rolunk">Rólunk</a>
+      <a href="galeria.html">Galéria</a>
+      <a href="index.html#kapcsolat" class="nav-cta">Kapcsolat</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page-hero">
+  <div class="section-eyebrow">Képek</div>
+  <h1 class="section-heading">Galéria</h1>
+</div>
+
+<div class="gallery-masonry">
+  <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+    <div class="gallery-tile" onclick="openLightbox(this.querySelector('img').src,'Templom')">
+    <img src="img/templom.jpg" alt="Konfirmáció"/>
+    <div class="gallery-tile-cap">Templom</div>
+  </div>
+  
+</div>
+
+<div class="gallery-pagination-wrap">
+  <div class="pagination" id="galleryPagination"></div>
+</div>
+
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-brand-name">Mezőcsáti Református Egyházközség</div>
+      <p class="footer-brand-desc">Szöveg</p>
+      <svg class="footer-cross" width="30" height="30" viewBox="0 0 44 44" fill="none">
+        <rect x="19" y="3" width="6" height="38" rx="2" fill="currentColor"/>
+        <rect x="3" y="17" width="38" height="6" rx="2" fill="currentColor"/>
+      </svg>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Navigáció</div>
+      <ul>
+        <li><a href="kozlemenyek.html">Közlemények</a></li>
+        <li><a href="index.html#rolunk">Rólunk</a></li>
+        <li><a href="galeria.html">Galéria</a></li>
+        <li><a href="index.html#kapcsolat">Kapcsolat</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Kapcsolat</div>
+      <ul>
+        <li><a href="tel:(49) 552 071">(49) 552 071</a></li>
+        <li><a href="mailto:info@fenysugar.com">info@fenysugar.com</a></li>
+        <li><a href="https://www.facebook.com/fenysugar/" target="_blank">Facebook</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Mezőcsáti Református Egyházközség</span>
+  </div>
+</footer>
+
+<button class="scroll-top" id="scrollTop" aria-label="Fel">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">×</button>
+  <img id="lbImg" src="" alt=""/>
+</div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+<script>initGalleryPagination(8);</script>
+</body>
+</html>
