@@ -413,6 +413,7 @@ async function pdfLoad(postId, url) {
     if (loading) loading.remove();
 
     const containerWidth = wrap.clientWidth || 680;
+    const dpr = window.devicePixelRatio || 1;
 
     for (let i = 1; i <= doc.numPages; i++) {
       const page  = await doc.getPage(i);
@@ -420,13 +421,17 @@ async function pdfLoad(postId, url) {
       const scale = Math.min(containerWidth / vp0.width, 3);
       const vp    = page.getViewport({ scale });
 
-      const canvas    = document.createElement('canvas');
+      const canvas     = document.createElement('canvas');
       canvas.className = 'pdf-canvas';
-      canvas.width    = vp.width;
-      canvas.height   = vp.height;
+      canvas.width     = Math.floor(vp.width  * dpr);
+      canvas.height    = Math.floor(vp.height * dpr);
+      canvas.style.width  = vp.width  + 'px';
+      canvas.style.height = vp.height + 'px';
       wrap.appendChild(canvas);
 
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      const ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      await page.render({ canvasContext: ctx, viewport: vp }).promise;
     }
   } catch(e) {
     if (loading) loading.innerHTML = '<span style="color:#c00;font-size:.8rem">Nem sikerült betölteni a PDF-et.</span>';

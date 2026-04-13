@@ -897,7 +897,7 @@ footer {
 }
 .pdf-canvas {
   display: block;
-  width: 100%;
+  max-width: 100%;
   height: auto;
   box-shadow: 0 2px 12px rgba(0,0,0,.45);
   border-radius: 1px;
