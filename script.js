@@ -98,7 +98,7 @@ function buildModal(post) {
       </div>`;
   }
 
-  // PDF embed
+  // PDF embed – PDF.js, all pages rendered below each other
   let pdfHtml = '';
   if (hasPdf) {
     pdfHtml = `
@@ -106,9 +106,14 @@ function buildModal(post) {
         <div class="modal-pdf-bar">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           PDF dokumentum
-          <a href="${post.pdf}" target="_blank" class="modal-pdf-open">Megnyitás / Letöltés ↗</a>
+          <a href="${post.pdf}" target="_blank" class="modal-pdf-open">Letöltés ↗</a>
         </div>
-        <iframe class="modal-pdf-frame" src="${post.pdf}" title="PDF"></iframe>
+        <div class="modal-pdf-pages" id="pdf-pages-${post.id}">
+          <div class="pdf-loading" id="pdf-loading-${post.id}">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="pdf-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            Betöltés…
+          </div>
+        </div>
       </div>`;
   }
 
@@ -378,3 +383,65 @@ function pageNumbers(cur, total) {
   if (cur >= total-3) return [1, '...', total-4, total-3, total-2, total-1, total];
   return [1, '...', cur-1, cur, cur+1, '...', total];
 }
+
+// ─── PDF.js renderer – all pages stacked ─────────────────────
+const _pdfLoaded = new Set();
+
+async function _ensurePdfJs() {
+  if (window.pdfjsLib) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+async function pdfLoad(postId, url) {
+  if (_pdfLoaded.has(postId)) return;
+  _pdfLoaded.add(postId);
+
+  const wrap    = document.getElementById('pdf-pages-' + postId);
+  const loading = document.getElementById('pdf-loading-' + postId);
+  if (!wrap) return;
+
+  try {
+    await _ensurePdfJs();
+    const doc = await pdfjsLib.getDocument(url).promise;
+    if (loading) loading.remove();
+
+    const containerWidth = wrap.clientWidth || 680;
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page  = await doc.getPage(i);
+      const vp0   = page.getViewport({ scale: 1 });
+      const scale = Math.min(containerWidth / vp0.width, 3);
+      const vp    = page.getViewport({ scale });
+
+      const canvas    = document.createElement('canvas');
+      canvas.className = 'pdf-canvas';
+      canvas.width    = vp.width;
+      canvas.height   = vp.height;
+      wrap.appendChild(canvas);
+
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+    }
+  } catch(e) {
+    if (loading) loading.innerHTML = '<span style="color:#c00;font-size:.8rem">Nem sikerült betölteni a PDF-et.</span>';
+  }
+}
+
+// Hook into openModal to trigger PDF load
+const _origOpenModal = openModal;
+window.openModal = function(id) {
+  _origOpenModal(id);
+  const overlay = document.getElementById(id);
+  if (!overlay) return;
+  const pagesDiv = overlay.querySelector('.modal-pdf-pages');
+  if (!pagesDiv) return;
+  const postId = id.replace('modal-', '');
+  const post = (typeof POSTS !== 'undefined') && POSTS.find(p => p.id === postId);
+  if (post && post.pdf) pdfLoad(postId, post.pdf);
+};
