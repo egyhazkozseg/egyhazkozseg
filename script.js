@@ -52,27 +52,125 @@ function closeLightbox() {
   document.body.style.overflow = '';
 }
 
+// ─── helpers ────────────────────────────────────────────────
+function getImgs(post) {
+  if (!post.img) return [];
+  return Array.isArray(post.img) ? post.img.filter(Boolean) : [post.img];
+}
+function firstImg(post) { return getImgs(post)[0] || ''; }
+function isPdf(post)     { return !!post.pdf; }
+function isPhotoOnly(post) { return !!post.photoOnly; }
+
+// ─── badge (card overlay) ────────────────────────────────────
+function cardBadge(post) {
+  const imgs = getImgs(post);
+  if (isPdf(post)) return `<span class="card-badge card-badge-pdf">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</span>`;
+  if (imgs.length > 1) return `<span class="card-badge card-badge-img">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>${imgs.length} kép</span>`;
+  return '';
+}
+
+// ─── modal builder ──────────────────────────────────────────
 function buildModal(post) {
-  const imgHtml = post.img
-    ? `<img class="modal-img" src="${post.img}" alt=""/>`
-    : '';
-  const bodyPad = post.img && typeof post.img === 'string' ? '' : 'style="padding-top:38px"';
+  const imgs      = getImgs(post);
+  const hasPdf    = isPdf(post);
+  const photoOnly = isPhotoOnly(post);
+
+  // image / slider
+  let mediaHtml = '';
+  if (imgs.length === 1) {
+    mediaHtml = `<div class="modal-img-wrap"><img src="${imgs[0]}" alt=""/></div>`;
+  } else if (imgs.length > 1) {
+    const slides = imgs.map((src, i) =>
+      `<div class="ms-slide${i === 0 ? ' active' : ''}" data-index="${i}"><img src="${src}" alt=""/></div>`
+    ).join('');
+    const dots = imgs.map((_, i) =>
+      `<button class="ms-dot${i === 0 ? ' active' : ''}" onclick="msGoTo('modal-${post.id}',${i})" aria-label="${i+1}. kép"></button>`
+    ).join('');
+    mediaHtml = `
+      <div class="modal-slider" id="ms-${post.id}">
+        <div class="ms-track">${slides}</div>
+        <button class="ms-arrow ms-prev" onclick="msStep('modal-${post.id}',-1)" aria-label="Előző">&#8249;</button>
+        <button class="ms-arrow ms-next" onclick="msStep('modal-${post.id}',1)" aria-label="Következő">&#8250;</button>
+        <div class="ms-dots">${dots}</div>
+        <div class="ms-counter"><span class="ms-cur">1</span>&thinsp;/&thinsp;${imgs.length}</div>
+      </div>`;
+  }
+
+  // PDF embed
+  let pdfHtml = '';
+  if (hasPdf) {
+    pdfHtml = `
+      <div class="modal-pdf-wrap">
+        <div class="modal-pdf-bar">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          PDF dokumentum
+          <a href="${post.pdf}" target="_blank" class="modal-pdf-open">Megnyitás / Letöltés ↗</a>
+        </div>
+        <iframe class="modal-pdf-frame" src="${post.pdf}" title="PDF"></iframe>
+      </div>`;
+  }
+
+  // photo-only modal (no text body)
+  if (photoOnly) {
+    return `
+      <div class="modal-overlay modal-photo-only" id="modal-${post.id}" onclick="if(event.target===this)closeModal('modal-${post.id}')">
+        <div class="modal-box modal-box-photo">
+          <button class="modal-x-close" onclick="closeModal('modal-${post.id}')" aria-label="Bezárás">×</button>
+          <div class="modal-photo-meta">
+            <span class="modal-tag">${post.tag}</span>
+            <span class="modal-photo-title">${post.title}</span>
+            <span class="modal-photo-date">${post.date}</span>
+          </div>
+          ${mediaHtml}
+        </div>
+      </div>`;
+  }
+
+  // normal modal
+  const noMedia = imgs.length === 0 && !hasPdf;
   return `
     <div class="modal-overlay" id="modal-${post.id}" onclick="if(event.target===this)closeModal('modal-${post.id}')">
       <div class="modal-box">
-        ${imgHtml}
-        <div class="modal-body" ${bodyPad}>
-          <div class="modal-tag">${post.tag}</div>
-          <div class="modal-title">${post.title}</div>
-          <div class="modal-meta">${post.date}</div>
-          <div class="modal-text">${post.content}</div>
-          <button class="modal-close" onclick="closeModal('modal-${post.id}')">Bezárás</button>
+        ${mediaHtml}
+        ${pdfHtml}
+        <div class="modal-body"${noMedia ? ' style="padding-top:28px"' : ''}>
+          <div class="modal-header">
+            <div class="modal-header-left">
+              <div class="modal-tag">${post.tag}</div>
+              <div class="modal-title">${post.title}</div>
+              <div class="modal-meta">${post.date}</div>
+            </div>
+            <button class="modal-close" onclick="closeModal('modal-${post.id}')">Bezárás</button>
+          </div>
+          <div class="modal-text">${post.content || ''}</div>
         </div>
       </div>
     </div>`;
 }
 
-//INDEX
+// ─── slider logic ────────────────────────────────────────────
+function msGoTo(modalId, index) {
+  const overlay = document.getElementById(modalId);
+  if (!overlay) return;
+  const slides = overlay.querySelectorAll('.ms-slide');
+  const dots   = overlay.querySelectorAll('.ms-dot');
+  const cur    = overlay.querySelector('.ms-cur');
+  slides.forEach((s, i) => s.classList.toggle('active', i === index));
+  dots.forEach((d, i)   => d.classList.toggle('active', i === index));
+  if (cur) cur.textContent = index + 1;
+}
+function msStep(modalId, dir) {
+  const overlay = document.getElementById(modalId);
+  if (!overlay) return;
+  const slides = overlay.querySelectorAll('.ms-slide');
+  let active = 0;
+  slides.forEach((s, i) => { if (s.classList.contains('active')) active = i; });
+  msGoTo(modalId, (active + dir + slides.length) % slides.length);
+}
+
+// ─── date parse ──────────────────────────────────────────────
 function parseDateHu(str) {
   const months = ['január','február','március','április','május','június','július','augusztus','szeptember','október','november','december'];
   const m = str.match(/(\d{4})\. (\w+) (\d+)\./);
@@ -80,36 +178,44 @@ function parseDateHu(str) {
   const mon = months.indexOf(m[2]);
   return new Date(parseInt(m[1]), mon < 0 ? 0 : mon, parseInt(m[3]));
 }
-
 function getSortedPosts() {
   return [...POSTS].sort((a, b) => {
     const diff = parseDateHu(b.date) - parseDateHu(a.date);
-    if (diff !== 0) return diff;
-    return POSTS.indexOf(b) - POSTS.indexOf(a);
+    return diff !== 0 ? diff : POSTS.indexOf(b) - POSTS.indexOf(a);
   });
 }
 
+// ─── INDEX ──────────────────────────────────────────────────
 function renderIndexNews(newsContainerId, modalContainerId) {
   const container = document.getElementById(newsContainerId);
   const modalWrap = document.getElementById(modalContainerId);
   if (!container || !modalWrap || !POSTS || !POSTS.length) return;
 
-  const sorted = getSortedPosts();
-  const featured = sorted[0];
-  const hasImg = featured.img && typeof featured.img === 'string';
+  const sorted    = getSortedPosts();
+  const featured  = sorted[0];
   const listItems = sorted.slice(1, 5);
 
-  const imgHtml = hasImg
-    ? `<div class="nfc-img-wrap"><img src="${featured.img}" alt=""/></div>`
-    : '';
+  const featImgSrc = firstImg(featured);
+  const hasMedia   = !!featImgSrc || isPdf(featured);
+
+  let featMediaHtml = '';
+  if (featImgSrc) {
+    featMediaHtml = `<div class="nfc-img-wrap"><img src="${featImgSrc}" alt=""/>${cardBadge(featured)}</div>`;
+  } else if (isPdf(featured)) {
+    featMediaHtml = `<div class="nfc-img-wrap nfc-pdf-thumb">
+      <div class="pdf-thumb-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>PDF</span>
+      </div>${cardBadge(featured)}</div>`;
+  }
 
   const featuredHtml = `
-    <div class="news-featured-card${hasImg ? '' : ' nfc-no-img'}" onclick="openModal('modal-${featured.id}')">
-      ${imgHtml}
+    <div class="news-featured-card${hasMedia ? '' : ' nfc-no-img'}" onclick="openModal('modal-${featured.id}')">
+      ${featMediaHtml}
       <div class="nfc-body">
         <span class="nfc-tag">${featured.tag}</span>
         <h3 class="nfc-title">${featured.title}</h3>
-        <p class="nfc-excerpt">${featured.excerpt}</p>
+        <p class="nfc-excerpt">${featured.excerpt || ''}</p>
         <div class="nfc-foot">
           <span class="nfc-date">${featured.date}</span>
           <span class="nfc-read">Bővebben →</span>
@@ -120,63 +226,74 @@ function renderIndexNews(newsContainerId, modalContainerId) {
   const listHtml = `
     <div class="news-list">
       ${listItems.map(p => {
-        const pHasImg = p.img && typeof p.img === 'string';
-        const thumbHtml = pHasImg
-          ? `<div class="nl-thumb"><img src="${p.img}" alt=""/></div>`
-          : '';
+        const pImgSrc = firstImg(p);
+        let thumbHtml = '';
+        if (pImgSrc) {
+          thumbHtml = `<div class="nl-thumb"><img src="${pImgSrc}" alt=""/>${cardBadge(p)}</div>`;
+        } else if (isPdf(p)) {
+          thumbHtml = `<div class="nl-thumb nl-pdf-thumb">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>`;
+        }
+        const hasThumb = !!pImgSrc || isPdf(p);
         return `
-        <div class="nl-item${pHasImg ? ' nl-has-img' : ''}" onclick="openModal('modal-${p.id}')">
+        <div class="nl-item${hasThumb ? ' nl-has-img' : ''}" onclick="openModal('modal-${p.id}')">
           ${thumbHtml}
           <div class="nl-text">
-            <div class="nl-meta">
-              <span class="nl-tag">${p.tag}</span>
-              <span class="nl-date">${p.date}</span>
-            </div>
+            <div class="nl-meta"><span class="nl-tag">${p.tag}</span><span class="nl-date">${p.date}</span></div>
             <div class="nl-title">${p.title}</div>
-            <div class="nl-excerpt">${p.excerpt}</div>
+            <div class="nl-excerpt">${p.excerpt || ''}</div>
           </div>
         </div>`;
       }).join('')}
     </div>`;
 
-  container.className = hasImg ? 'news-layout' : 'news-layout news-layout-noimg';
+  container.className = hasMedia ? 'news-layout' : 'news-layout news-layout-noimg';
   container.innerHTML = featuredHtml + listHtml;
-
   modalWrap.innerHTML = sorted.map(buildModal).join('');
 }
 
-//KÖZLEMÉNYEK
+// ─── KÖZLEMÉNYEK ─────────────────────────────────────────────
 function renderPostsPage(gridId, pagId, modalContainerId, perPage) {
-  const grid    = document.getElementById(gridId);
-  const pagWrap = document.getElementById(pagId);
+  const grid      = document.getElementById(gridId);
+  const pagWrap   = document.getElementById(pagId);
   const modalWrap = document.getElementById(modalContainerId);
   if (!grid || !pagWrap || !modalWrap || !POSTS) return;
 
   const sortedPosts = getSortedPosts();
   modalWrap.innerHTML = sortedPosts.map(buildModal).join('');
 
-  const total = sortedPosts.length;
-  const totalPages = Math.ceil(total / perPage);
+  const totalPages = Math.ceil(sortedPosts.length / perPage);
   let current = 1;
 
   function postCardHtml(post) {
-    const imgSection = post.img
-      ? `<div class="post-card-img"><img src="${post.img}" alt=""/></div>`
-      : '';
+    const imgSrc    = firstImg(post);
+    const hasPdf    = isPdf(post);
+    const photoOnly = isPhotoOnly(post);
+
+    let cardMedia = '';
+    if (imgSrc) {
+      cardMedia = `<div class="post-card-img"><img src="${imgSrc}" alt=""/>${cardBadge(post)}</div>`;
+    } else if (hasPdf) {
+      cardMedia = `<div class="post-card-img post-card-pdf-thumb">
+        <div class="pdf-thumb-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>PDF</span>
+        </div>${cardBadge(post)}</div>`;
+    }
+
+    const readLabel = photoOnly ? 'Megtekintés →' : 'Bővebben →';
     return `
-      <div class="post-card" onclick="openModal('modal-${post.id}')">
-        ${imgSection}
+      <div class="post-card${photoOnly ? ' post-card-photo' : ''}" onclick="openModal('modal-${post.id}')">
+        ${cardMedia}
         <div class="post-card-body">
           <div class="post-card-meta">
             <span class="post-tag">${post.tag}</span>
             <span class="post-date">${post.date}</span>
           </div>
           <div class="post-title">${post.title}</div>
-          <div class="post-excerpt">${post.excerpt}</div>
-          <div class="post-footer">
-            <span class="post-date">${post.date}</span>
-            <span class="post-read">Bővebben →</span>
-          </div>
+          ${!photoOnly ? `<div class="post-excerpt">${post.excerpt || ''}</div>` : ''}
+          <div class="post-footer"><span class="post-read">${readLabel}</span></div>
         </div>
       </div>`;
   }
@@ -192,32 +309,29 @@ function renderPostsPage(gridId, pagId, modalContainerId, perPage) {
   function renderPag() {
     pagWrap.innerHTML = '';
     if (totalPages <= 1) return;
-
     pagWrap.appendChild(pagBtn('←', current === 1, false, () => show(current - 1)));
-
     pageNumbers(current, totalPages).forEach(p => {
       if (p === '...') {
-        const dots = document.createElement('span');
-        dots.className = 'pag-dots';
-        dots.textContent = '…';
-        pagWrap.appendChild(dots);
+        const el = document.createElement('span');
+        el.className = 'pag-dots'; el.textContent = '…';
+        pagWrap.appendChild(el);
       } else {
         pagWrap.appendChild(pagBtn(p, false, p === current, () => { if (p !== current) show(p); }));
       }
     });
-
     pagWrap.appendChild(pagBtn('→', current === totalPages, false, () => show(current + 1)));
   }
 
   show(1);
 }
-//GALÉRIA
+
+// ─── GALÉRIA ─────────────────────────────────────────────────
 function initGalleryPagination(tilesPerPage) {
   const masonry = document.querySelector('.gallery-masonry');
   const pagWrap = document.getElementById('galleryPagination');
   if (!masonry || !pagWrap) return;
 
-  const tiles = Array.from(masonry.querySelectorAll('.gallery-tile'));
+  const tiles      = Array.from(masonry.querySelectorAll('.gallery-tile'));
   const totalPages = Math.ceil(tiles.length / tilesPerPage);
   let current = 1;
 
@@ -233,20 +347,16 @@ function initGalleryPagination(tilesPerPage) {
   function renderPag() {
     pagWrap.innerHTML = '';
     if (totalPages <= 1) return;
-
     pagWrap.appendChild(pagBtn('←', current === 1, false, () => show(current - 1)));
-
     pageNumbers(current, totalPages).forEach(p => {
       if (p === '...') {
-        const dots = document.createElement('span');
-        dots.className = 'pag-dots';
-        dots.textContent = '…';
-        pagWrap.appendChild(dots);
+        const el = document.createElement('span');
+        el.className = 'pag-dots'; el.textContent = '…';
+        pagWrap.appendChild(el);
       } else {
         pagWrap.appendChild(pagBtn(p, false, p === current, () => { if (p !== current) show(p); }));
       }
     });
-
     pagWrap.appendChild(pagBtn('→', current === totalPages, false, () => show(current + 1)));
   }
 
@@ -264,7 +374,7 @@ function pagBtn(label, disabled, active, onClick) {
 
 function pageNumbers(cur, total) {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  if (cur <= 4)        return [1, 2, 3, 4, 5, '...', total];
-  if (cur >= total-3)  return [1, '...', total-4, total-3, total-2, total-1, total];
+  if (cur <= 4)       return [1, 2, 3, 4, 5, '...', total];
+  if (cur >= total-3) return [1, '...', total-4, total-3, total-2, total-1, total];
   return [1, '...', cur-1, cur, cur+1, '...', total];
 }
